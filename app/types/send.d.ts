@@ -21,7 +21,7 @@ export interface ChatInputHandle {
 }
 
 export interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (input: string, selectedTools?: string[], selectedModel?: string, images?: File[]) => void;
   disabled: boolean;
   availableTools: Tool[];
   availableModels: Model[];

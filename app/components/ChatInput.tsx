@@ -19,15 +19,59 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const imageInputRef = useRef<HTMLInputElement>(null)
 
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {}
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+      if (imageFiles.length > 0) {
+        setUploadedImages(prev => [...prev, ...imageFiles]);
+        const newPreviews = imageFiles.map(file => URL.createObjectURL(file));
+        setImagePreviews(prev => [...prev, ...newPreviews]);
+      }
 
-    const handleSend = () => {}
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
+    }
 
-    const handleAddClick = () => {}
+    const handleSend = () => {
+      if ((input.trim() || uploadedImages.length > 0) && !disabled) {
+        onSend(
+          input,
+          selectedTools.length ? selectedTools : undefined,
+          currentModel,
+          uploadedImages.length ? uploadedImages : undefined,
+        )
+        setInput('');
+        clearImages()
+      }
+    }
 
-    const removeImage = (index: number) => {}
+    const handleAddClick = () => {
+      imageInputRef.current?.click();
+    }
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {}
+    // 移除图片
+    const removeImage = (index: number) => {
+      // 释放预览 URL
+      URL.revokeObjectURL(imagePreviews[index])
+
+      setUploadedImages(prev => prev.filter((_, i) => i !== index))
+      setImagePreviews(prev => prev.filter((_, i) => i !== index))
+    }
+
+    // 清空所有图片
+    const clearImages = () => {
+      imagePreviews.forEach(url => URL.revokeObjectURL(url))
+      setUploadedImages([])
+      setImagePreviews([])
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    }
 
     return (
       <div

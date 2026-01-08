@@ -29,8 +29,68 @@ export function useSendMessage({
    * @param images - 上传的图片文件列表（可选）
    */
 
-  const sendMessage = useCallback((message: string) => {
-    console.log('sendMessage', message);
+  const sendMessage = useCallback(async (
+    input: string,
+    selectedTools: string[],
+    selectedModel: string,
+    images: File[],
+  ) => {
+    console.log('sendMessage', input, selectedTools, selectedModel, images);
+
+
+    try {
+      setIsLoading(true);
+
+      // 添加用户消息（文本或图片）
+      let messageContent :String | Array<any> = input;
+      const imageData : Array<{ data: string, mimeType: string }> = []
+
+      if (images && images.length > 0) {
+        // 将图片转换为 base64 数据
+        for (const image of images) {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result = reader.result as string;
+              const base64Data = result.split(',')[1];
+              resolve(base64Data);
+            }
+            reader.onerror = () => reject(new Error('Failed to read image file'));
+            reader.readAsDataURL(image);
+          });
+          imageData.push({ data: base64, mimeType: image.type });
+        }
+      }
+
+      messageContent = [{
+        type: 'text',
+        text: input,
+      }, ...imageData.map((image) => ({
+        type: 'image_url',
+        image_url: {
+          url: `data:${image.mimeType};base64,${image.data}`,
+        },
+      }))]
+
+
+      addUserMessage(messageContent);
+
+      // 创建AI消息占位
+
+      const aiMessage = addAIMessage();
+      // 发送请求
+
+      // 读取流式响应
+
+
+      
+    } catch (error) {
+      console.error('发送消息时出错:', error)
+      addErrorMessage();
+    } finally {
+      setIsLoading(false);
+    }
+
   }, []);
 
   return {
