@@ -21,7 +21,7 @@ export function MessageList({
   }
 
   return (
-    <div className="w-full max-w-5xl mx-autp [x=4 flex flex-col pb-32">
+    <div className="w-full max-w-5xl mx-auto my-0 flex flex-col pb-32">
       {/* 消息列表 */}
       {messages.map((message, index) => (
         <MessageBubble key={message.id} message={message} index={index} />

@@ -1,5 +1,7 @@
 import { useCallback } from "react";
 import type { SendMessageProps } from "../types/send";
+import { getApp } from "../agent";
+import { Message } from "@langchain/core/messages";
 export function useSendMessage({
   addUserMessage,
   addAIMessage,
@@ -77,10 +79,55 @@ export function useSendMessage({
 
       // 创建AI消息占位
 
-      const aiMessage = addAIMessage();
+      const aiMessage = addAIMessage() as Message
       // 发送请求
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          model: selectedModel,
+          tools: selectedTools,
+          messages: messageContent,
+        }),
+      })
 
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
       // 读取流式响应
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get reader');
+      }
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        console.log('value', value);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const data = JSON.parse(line);
+              console.log('data', data);
+              if (data.type === 'chunk') {
+                updateAIMessage(aiMessage.id!, data.content);
+              } else if (data.type === 'tool_calls') {
+                updateToolCalls(aiMessage.id!, data.tool_calls);
+              } else if (data.type === 'tool_result') {
+                updateToolCallResults(aiMessage.id!, data.name, data.data);
+              } else if (data.type === 'tool_error') {
+                updateToolCallError(aiMessage.id!, data.name, data.data);
+              }
+            } catch (error) {
+              console.error('解析流数据错误:', error)
+            }
+          }
+        }
+      }
 
 
       
