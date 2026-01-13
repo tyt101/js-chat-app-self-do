@@ -121,6 +121,10 @@ export function useSendMessage({
                 updateToolCallResults(aiMessage.id!, data.name, data.data);
               } else if (data.type === 'tool_error') {
                 updateToolCallError(aiMessage.id!, data.name, data.data);
+              } else if (data.type === 'end') {
+                completeAIMessage(aiMessage.id!);
+              } else {
+                console.error('未知数据类型:', data);
               }
             } catch (error) {
               console.error('解析流数据错误:', error)
